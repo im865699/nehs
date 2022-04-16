@@ -1,0 +1,63 @@
+
+
+#include <bmp3_defs.h>
+#include <DFRobot_BMP388.h>
+#include <DFRobot_BMP388_I2C.h>
+#include <DFRobot_BMP388_SPI.h>
+#include <SPI.h>
+
+#include <Wire.h>
+#include "math.h"
+#define CALIBRATE_Altitude
+DFRobot_BMP388_I2C bmp388;
+float seaLevel;
+
+
+void setup() {
+  // put your setup code here, to run once:
+   Serial.begin(9600);
+   
+   while(bmp388.begin()){
+    Serial.println("Initalize error!");
+    delay(1000);
+   }
+   delay(100);
+   seaLevel=bmp388.readSeaLevel(525.0);
+   Serial.print("seaLevel:");
+   Serial.print(seaLevel);
+   Serial.println(" Pa");
+
+
+
+    delay(1000);
+
+  
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  #ifdef CALIBRATE_Altitude
+  float altitude=bmp388.readCalibratedAltitude(seaLevel);
+  Serial.print("calibrate Altitude:");
+  Serial.print(altitude);
+  Serial.println(" m");
+  #else
+  float altitude=bmp388.readAltitude();
+  Serial.print("Altitude:");
+  Serial(altitude);
+  Serial.println(" m");
+  #endif
+  delay(100);
+  float Pressure=bmp388.readPressure();
+  Serial.print("Pressure:");
+  Serial.print(Pressure);
+  Serial.println(" Pa");
+  delay(100);
+  float Temperature=bmp388.readTemperature();
+  Serial.print("Temperature:");
+  Serial.print(Temperature);
+  Serial.println(" C");
+  Serial.println();
+  delay(1000);
+
+}
