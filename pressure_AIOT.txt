@@ -1,0 +1,83 @@
+#include <HTTPClient.h>
+#include <WiFi.h>
+char ssid[]="輸入無線網路ID";
+char password[]="輸入無線網路密碼";
+String url="http://api.thingspeak.com/update?api_key=輸入已註冊ThinkSpeak帳號的Write KPI金鑰碼";
+#include <bmp3_defs.h>
+#include <DFRobot_BMP388.h>
+#include <DFRobot_BMP388_I2C.h>
+#include <DFRobot_BMP388_SPI.h>
+#include <SPI.h>
+
+#include <Wire.h>
+#include "math.h"
+#define CALIBRATE_Altitude
+DFRobot_BMP388_I2C bmp388;
+float seaLevel;
+
+
+void setup() {
+  // put your setup code here, to run once:
+   Serial.begin(9600);
+   
+   while(bmp388.begin()){
+    Serial.println("Initalize error!");
+    delay(1000);
+   }
+   delay(100);
+   seaLevel=bmp388.readSeaLevel(525.0);
+   Serial.print("seaLevel:");
+   Serial.print(seaLevel);
+   Serial.println(" Pa");
+   Serial.print("開始連線到無線網路SSID:");
+   Serial.println(ssid);
+   WiFi.mode(WIFI_STA);
+   WiFi.begin(ssid,password);
+   while(WiFi.status()!=WL_CONNECTED){
+    Serial.print(".");
+    delay(1000);
+   }
+   Serial.print("連線完成");
+  
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  #ifdef CALIBRATE_Altitude
+  float altitude=bmp388.readCalibratedAltitude(seaLevel);
+  Serial.print("calibrate Altitude:");
+  Serial.print(altitude);
+  Serial.println(" m");
+  #else
+  float altitude=bmp388.readAltitude();
+  Serial.print("Altitude:");
+  Serial(altitude);
+  Serial.println(" m");
+  #endif
+  delay(100);
+  float Pressure=bmp388.readPressure();
+  Serial.print("Pressure:");
+  Serial.print(Pressure);
+  Serial.println(" Pa");
+  delay(100);
+  float Temperature=bmp388.readTemperature();
+  Serial.print("Temperature:");
+  Serial.print(Temperature);
+  Serial.println(" C");
+  Serial.println();
+  delay(1000);
+  Serial.println("啟動網頁連線");
+  HTTPClient http;
+  String url1=url+"&field1="+(float)altitude+"&field2="+(float)Pressure+"&field3="+(float)Temperature;
+  http.begin(url1);
+  int httpCode=http.GET();
+  if(httpCode==HTTP_CODE_OK){
+    String payload=http.getString();
+    Serial.print("網頁內容=");
+    Serial.println(payload);
+  }else{
+    Serial.println("網路傳送失敗");
+  }
+  http.end();
+  delay(20000);
+}
